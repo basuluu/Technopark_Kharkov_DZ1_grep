@@ -23,9 +23,6 @@ def grep(lines, params):
                 if re.search(params.pattern.lower(), lines[f].lower()) == None:
                     lines[f] = lines[f] + '\n'
                     num_vh.append(f)
-            if params.line_number:
-                if not (params.context or params.before_context or params.after_context):
-                    lines[f] = str(f+1) + ':' + lines[f]
                      
     else:
         for f in range(len(lines)):
@@ -38,9 +35,6 @@ def grep(lines, params):
                 if re.search(params.pattern.lower(), lines[f].lower()) :
                     lines[f] = lines[f] + '\n'
                     num_vh.append(f)
-            if params.line_number:
-                if not (params.context or params.before_context or params.after_context):
-                    lines[f] = str(f+1) + ':' + lines[f]
 
     if params.count:
         k = 0
@@ -92,17 +86,19 @@ def grep(lines, params):
                 lines[f] = lines[f].strip()
                 if params.line_number:
                     if f in num_vh:
-                        lines[f] = str(f + 1) + ':' + lines[f]
+                        output(str(f + 1) + ':' + lines[f])
                     else:
-                        lines[f] = str(f + 1) + '-' + lines[f] 
-                output(lines[f])
-            else:
-                if params.line_number:
-                    lines[f] = str(f + 1) + ':' + lines[f]
+                        output(str(f + 1) + '-' + lines[f])
+                else: 
+                    output(lines[f])
         else:
             if '\n' in lines[f]:
                 lines[f] = lines[f].strip()
-                output(lines[f])
+                if params.line_number:
+                    output(str(f + 1) + ':' + lines[f])
+                else:
+                    output(lines[f])
+            
             
 def parse_args(args):
     parser = argparse.ArgumentParser(description='This is a simple grep on python')
