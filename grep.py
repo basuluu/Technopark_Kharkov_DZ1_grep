@@ -58,9 +58,7 @@ def grep(lines, params):
                         output("{}-{}".format(nomer, line_buff))
                 nomer += 1
                 buff.clear()
-                    
-        if params.before_context:
-            if not flag:            
+            else:
                 buff.append(line)
 
         if params.after_context:
@@ -81,6 +79,7 @@ def grep(lines, params):
             else:
                 output(line)       
         nomer += 1
+
 def parse_args(args):
     parser = argparse.ArgumentParser(description='This is a simple grep on python')
     parser.add_argument(
