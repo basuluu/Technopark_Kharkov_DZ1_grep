@@ -5,101 +5,82 @@ import re
 def output(line):
     print(line)
 
+def check(line, params):
+    if params.invert:
+        if not params.ignore_case:
+            return not re.search(params.pattern, line)
+        else:
+            return not re.search(params.pattern.lower(), line.lower())     
+    else:
+        if not params.ignore_case:
+            return re.search(params.pattern, line)
+        else:
+            return re.search(params.pattern.lower(), line.lower())     
 
 def grep(lines, params):
-    num_vh = []
+    buff = []
+    buff_after = []
+    nomer = 1
+    k = 0
+    if params.count:    
+        count = 0
+        for line in lines:
+            if check(line, params):
+                count += 1
+        output(str(count))
+        return 0
+
+    if params.context:
+        if params.context >= params.before_context:
+            params.before_context = params.context
+        if params.context >= params.after_context:
+            params.after_context = params.context
+ 
     if '?' in params.pattern or '*' in params.pattern:
         params.pattern = params.pattern.replace('?','.')
         params.pattern = params.pattern.replace('*','\w*')
 
-    if params.invert:
-        for f in range(len(lines)):
-            lines[f] = lines[f].rstrip()
-            if not params.ignore_case:
-                if re.search(params.pattern, lines[f]) == None:
-                    lines[f] = lines[f] + '\n'
-                    num_vh.append(f)
-            else:
-                if re.search(params.pattern.lower(), lines[f].lower()) == None:
-                    lines[f] = lines[f] + '\n'
-                    num_vh.append(f)
-                     
-    else:
-        for f in range(len(lines)):
-            lines[f] = lines[f].rstrip()    
-            if not params.ignore_case:
-                if re.search(params.pattern, lines[f]):
-                    lines[f] = lines[f] + '\n'
-                    num_vh.append(f)
-            else:
-                if re.search(params.pattern.lower(), lines[f].lower()) :
-                    lines[f] = lines[f] + '\n'
-                    num_vh.append(f)
+    for line in lines:
+        line = line.rstrip()
 
-    if params.count:
-        k = 0
-        for line in lines:
-            if re.search('\n', line):
-                k += 1
-        output(str(k))
-        return 0
-  
+        flag = check(line, params)
 
-    if params.context:
-        for f in num_vh:
-            if (f - params.context >= 0) & (len(lines) - params.context > f):
-                for g in range(f - params.context, f + params.context + 1):
-                    lines[g] = lines[g] + '\t'
-  
-            elif (f - params.context < 0) & (len(lines) - params.context > f):
-                for g in range(0, f + params.context + 1):
-                    lines[g] = lines[g] + '\t'
-
-            elif (f - params.context >= 0) & (len(lines) - params.context <= f):
-                for g in range(f - params.context, len(lines)):
-                    lines[g] = lines[g] + '\t'
-            else:
-                for g in range(0, len(lines)):
-                    lines[g] = lines[g] + '\t'
-      
-    if params.before_context:
-        for f in num_vh:
-            if (f - params.before_context >= 0):
-                for g in range(f - params.before_context, f + 1):
-                    lines[g] = lines[g] + '\t'
-            else:
-                for g in range(0, f + 1):
-                    lines[g] = lines[g] + '\t'
-    
-    if params.after_context:
-        for f in num_vh:
-            if (len(lines) - params.after_context > f):
-                for g in range(f, f + params.after_context + 1):
-                    lines[g] = lines[g] + '\t'
-            else:
-                for g in range(f, len(lines)):
-                    lines[g] = lines[g] + '\t'
-
-    for f in range(len(lines)):
-        if params.context or params.before_context or params.after_context:
-            if '\t' in lines[f]:
-                lines[f] = lines[f].strip()
-                if params.line_number:
-                    if f in num_vh:
-                        output(str(f + 1) + ':' + lines[f])
+        if params.before_context:
+            if len(buff) > params.before_context:
+                del buff[0]
+            if flag:
+                nomer = nomer - len(buff) - 1
+                for line_buff in buff:
+                    nomer += 1
+                    if not params.line_number:
+                        output(line_buff)
                     else:
-                        output(str(f + 1) + '-' + lines[f])
-                else: 
-                    output(lines[f])
-        else:
-            if '\n' in lines[f]:
-                lines[f] = lines[f].strip()
-                if params.line_number:
-                    output(str(f + 1) + ':' + lines[f])
-                else:
-                    output(lines[f])
-            
-            
+                        output("{}-{}".format(nomer, line_buff))
+                nomer += 1
+                buff.clear()
+                    
+        if params.before_context:
+            if not flag:            
+                buff.append(line)
+
+        if params.after_context:
+            if flag:
+                k = params.after_context
+            else:
+                if k > 0:
+                    if not params.line_number:
+                        output(line)
+                    else:
+                        output("{}-{}".format(nomer, line))
+                    k -= 1
+                    buff.clear()
+
+        if flag:
+            if params.line_number:
+                output("{}:{}".format(nomer, line))
+            else:
+                output(line)       
+        nomer += 1
 def parse_args(args):
     parser = argparse.ArgumentParser(description='This is a simple grep on python')
     parser.add_argument(
